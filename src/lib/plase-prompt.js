@@ -217,10 +217,10 @@ export function parsePlaseOutput(text) {
   };
 
   return {
-    plase_V: getFloat(/V:\s*([-+]?[\d.]+)/),
-    plase_A: getFloat(/A:\s*([-+]?[\d.]+)/),
-    plase_R: getFloat(/R:\s*([-+]?[\d.]+)/),
-    plase_T: getFloat(/T:\s*([-+]?[\d.]+|N\/A)/),
+    plase_v: getFloat(/V:\s*([-+]?[\d.]+)/),
+    plase_a: getFloat(/A:\s*([-+]?[\d.]+)/),
+    plase_r: getFloat(/R:\s*([-+]?[\d.]+)/),
+    plase_t: getFloat(/T:\s*([-+]?[\d.]+|N\/A)/),
     plase_phi_elab: getFloat(/Phi_elab:\s*([\d.]+)/),
     plase_phi_comport: getFloat(/Phi_comport:\s*([\d.]+)/),
     plase_delta: getFloat(/Delta:\s*([-+]?[\d.]+)/),
