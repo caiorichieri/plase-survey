@@ -3,6 +3,9 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getAdminSupabase } from "@/lib/supabase";
 import { PLASE_SYSTEM_PROMPT, buildPlaseMessage, parsePlaseOutput } from "@/lib/plase-prompt";
 
+// Extend Vercel function timeout to 60s (default is 10s — too short for Claude API)
+export const maxDuration = 60;
+
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -45,13 +48,14 @@ export async function POST(request) {
     const responseId = inserted.id;
 
     // 2. Run PLASE analysis via Claude API
+    let analysisError = null;
     try {
       const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
       const userMessage = buildPlaseMessage(body);
 
       const message = await client.messages.create({
-        model: "claude-opus-4-6",
-        max_tokens: 4000,
+        model: "claude-sonnet-4-6",
+        max_tokens: 2000,
         system: PLASE_SYSTEM_PROMPT,
         messages: [{ role: "user", content: userMessage }],
       });
@@ -64,7 +68,7 @@ export async function POST(request) {
       const parsed = parsePlaseOutput(analysisText);
 
       // 3. Update the record with analysis
-      await db
+      const { error: updateError } = await db
         .from("responses")
         .update({
           plase_raw: analysisText,
@@ -72,12 +76,17 @@ export async function POST(request) {
           ...parsed,
         })
         .eq("id", responseId);
-    } catch (analysisError) {
-      // Analysis failed but data is saved — not a fatal error
-      console.error("PLASE analysis error:", analysisError);
+
+      if (updateError) {
+        console.error("Supabase update error:", updateError);
+        analysisError = "db_update_failed: " + updateError.message;
+      }
+    } catch (err) {
+      console.error("PLASE analysis error:", err.message || err);
+      analysisError = err.message || String(err);
     }
 
-    return NextResponse.json({ success: true, id: responseId });
+    return NextResponse.json({ success: true, id: responseId, analysisError });
   } catch (err) {
     console.error("Submit route error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
